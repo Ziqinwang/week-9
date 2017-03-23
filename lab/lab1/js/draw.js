@@ -34,6 +34,7 @@ container with ID #shapes. Use jQuery's append function to add a new div inside
 the #shapes container. The idea should look like the following:
 
 <div class="shape" data-leaflet-id="[the id]"><h1>Current ID: [the id]</h1></div>
+<span id="rec"></span>
 
 Where [the id] is replaced by the Leaflet ID of the layer.
 
@@ -71,7 +72,7 @@ Moving your mouse outside of the circle should remove the highlighting.
 
 // Global Variables
 
-var myRectangle;
+var myRectangles=[];
 
 // Initialize Leaflet Draw
 
@@ -89,10 +90,37 @@ map.addControl(drawControl);
 
 // Run every time Leaflet draw creates a new layer
 
+
 map.on('draw:created', function (e) {
+
     var type = e.layerType; // The type of shape
     var layer = e.layer; // The Leaflet layer for the shape
     var id = L.stamp(layer); // The unique Leaflet ID for the layer
+    layer.addTo(map);
+    myRectangles.push(layer);
+    $('#shapes').append(
+      '<div class="shape" id='+id+'><h1 id ="sha">Current ID:'+id+'</h1></div>'
+
+    );
+
+    $( "#"+id ).click(function() {
+        layer.setStyle({fillColor: '#00FFFF',color:'#FFFFFF'});//change color
+        //map.removeLayer(layer);//remove layer
+        //$( "#"+id ).empty();//remove sidebar
+    });
+
+    layer.on('mouseover', function () {
+      this.setStyle({
+        'fillColor': '#0000ff'
+      });
+      $( "#"+id ).css("color",'#0000ff');
+    });
+    layer.on('mouseout', function () {
+      this.setStyle({
+        'fillColor': '#00FFFF'
+      });
+      $( "#"+id ).css("color","black");
+    });
 
 
 

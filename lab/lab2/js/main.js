@@ -127,10 +127,10 @@ var state = {
  *  one time even if weupdate the position later
  */
 var goToOrigin = _.once(function(lat, lng) {
-  map.flyTo([lat, lng], 14);
+  map.flyTo([lat, lng], 11);
 });
 
-
+phillyCoord = [-75.193825,39.951407];
 /* Given a lat and a long, we should create a marker, store it
  *  somewhere, and add it to the map
  */
@@ -147,6 +147,7 @@ $(document).ready(function() {
   if ("geolocation" in navigator) {
     navigator.geolocation.getCurrentPosition(function(position) {
       updatePosition(position.coords.latitude, position.coords.longitude, position.timestamp);
+      //coordArray.push({"lat":position.coords.latitude, "lon":position.coords.longitude});
     });
   } else {
     alert("Unable to access geolocation API!");
@@ -167,9 +168,45 @@ $(document).ready(function() {
   // click handler for the "calculate" button (probably you want to do something with this)
   $("#calculate").click(function(e) {
     var dest = $('#dest').val();
-    console.log(dest);
+    //console.log(dest);
+    var Url = "https://search.mapzen.com//v1/search?api_key=mapzen-p53chPt&text="+dest+"&size=1";
+
+
+    //var route ='https://matrix.mapzen.com/optimized_route?json={"locations":[{"lat":40.042072,"lon":-76.306572},{"lat":39.992115,"lon":-76.781559},{"lat":39.984519,"lon":-76.6956},{"lat":39.996586,"lon":-76.769028},{"lat":39.984322,"lon":-76.706672}],"costing":"auto","directions_options":{"units":"miles"}}&api_key=mapzen-p53chPt';
+    $.ajax(Url).done(function(data) {
+        // var parsedData = JSON.parse(data);
+        // L.geoJson(data).addTo(map);
+        //console.log(data.features[0].geometry.coordinates);
+
+        var desCord = data.features[0].geometry.coordinates;
+        //console.log(desCord);
+        updatePosition(desCord[1],desCord[0]);
+        var routeJson = {
+          "locations":[
+          {"lat":phillyCoord[1],"lon":phillyCoord[0]},
+          {"lat":desCord[1],"lon":desCord[0]},
+          ],
+          "costing":"auto",
+          "directions_options":{"units":"miles"}
+        };
+        //console.log(routeJson);
+        var route ='https://matrix.mapzen.com/optimized_route?json='+JSON.stringify(routeJson)+'&api_key=mapzen-p53chPt';
+        $.ajax(route).done(function(rdata){
+          //console.log(rdata);
+          //console.log(rdata.trip.legs[0].shape);
+          var array = decode(rdata.trip.legs[0].shape);
+          //console.log(array);
+          var flip = _.map(array,
+            function(layer){
+              return [layer[0],layer[1]];
+          });
+          //console.log(flip);
+          var myRoute = L.polyline(flip, {color: 'tomato'}).addTo(map);
+        });
+        // map.fitBounds([
+        //  [phillyCoord[1],phillyCoord[0]],
+        //  [desCord[1], desCord[0]]
+        // ]);
+    });
   });
-
 });
-
-

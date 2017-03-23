@@ -60,18 +60,24 @@ var state = {
   marker1: undefined,
   marker2: undefined,
   line: undefined,
-}
+  routeJson: {
+    "locations":[],
+    "costing":"auto",
+    "directions_options":{"units":"miles"}
+  },
+};
+
 
 /** ---------------
 Map configuration
 ---------------- */
 
 var map = L.map('map', {
-  center: [42.378, -71.103],
-  zoom: 14
+  center: [40.743417, -73.992518],
+  zoom: 15
 });
 
-var Stamen_TonerLite = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+var Stamen_TonerLite = L.tileLayer('http://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', {
   attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   subdomains: 'abcd',
 }).addTo(map);
@@ -109,7 +115,8 @@ var resetApplication = function() {
   map.removeLayer(state.line);
   state.line = undefined;
   $('#button-reset').hide();
-}
+  $('.leaflet-draw-draw-marker').show();
+};
 
 $('#button-reset').click(resetApplication);
 
@@ -123,6 +130,29 @@ map.on('draw:created', function (e) {
   var type = e.layerType; // The type of shape
   var layer = e.layer; // The Leaflet layer for the shape
   var id = L.stamp(layer); // The unique Leaflet ID for the
+  if(state.count === 0){
+    state.marker1 = layer;
+    layer.addTo(map);
+    state.routeJson.locations[0] = _.object(["lat","lon"], _.values(layer._latlng) );
+    state.count += 1;
+    } else if (state.count === 1) {
+        state.marker2 = layer;
+        layer.addTo(map);
+        state.routeJson.locations[1] = _.object(["lat","lon"], _.values(layer._latlng) );
+        //console.log(state.routeJson.locations);
+        var route ='https://matrix.mapzen.com/optimized_route?json='+JSON.stringify(state.routeJson)+'&api_key=mapzen-p53chPt';
+        $.ajax(route).done(function(rdata){
+              var array = decode(rdata.trip.legs[0].shape);
+              var flip = _.map(array,
+                function(layer){
+                  return [layer[0],layer[1]];
+              });
+              state.line  = L.polyline(flip, {color: 'tomato'}).addTo(map);
+        });
+        $('#button-reset').show();
+        $('.leaflet-draw-draw-marker').hide();
+   }
 
-  console.log('Do something with the layer you just created', layer, layer._latlng);
+
+  //console.log('Do something with the layer you just created', layer, layer._latlng);
 });
